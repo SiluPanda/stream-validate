@@ -121,9 +121,11 @@ export class ProgressiveValidator<T> {
         if (strategy === 'skip') {
           // Don't set the value, mark as error and return
           this.meta[path] = 'error'
+          this.seq++
           return { partial: this.buildPartial(), error: validationError }
         } else if (strategy === 'error') {
           this.meta[path] = 'error'
+          this.seq++
           return { partial: this.buildPartial(), error: validationError }
         }
         // include-invalid: fall through and set value anyway

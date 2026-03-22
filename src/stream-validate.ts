@@ -6,6 +6,10 @@ import type { StreamValidatorOptions, ValidatedPartial } from './types'
  * Async generator that consumes an AsyncIterable<string> of JSON chunks,
  * progressively validates each field against the schema, and yields
  * ValidatedPartial<T> events as fields complete.
+ *
+ * Partials are yielded as they are produced — the input stream is pumped
+ * concurrently so that callers receive each field the moment it validates,
+ * rather than waiting for the entire stream to finish.
  */
 export async function* streamValidate<T>(
   stream: AsyncIterable<string>,
@@ -14,43 +18,22 @@ export async function* streamValidate<T>(
 ): AsyncIterable<ValidatedPartial<T>> {
   const validator = createStreamValidator<T>(schema, options)
 
-  // Collect partials via the async iterator from the validator
-  // We drive the validator with stream chunks and pull partials as they come.
-  // Use a two-pump approach: one for the input stream, one for output.
-
-  const partials: Array<ValidatedPartial<T>> = []
-  const completionEvents: Array<{ done: boolean }> = []
-  let inputDone = false
-
-  // Run input pump in background (push chunks to validator)
+  // Pump the input stream in the background so the async iterator and the
+  // input feed run concurrently. This is what enables progressive yielding.
   const inputDonePromise = (async () => {
     for await (const chunk of stream) {
       validator.write(chunk)
     }
     validator.end()
-    inputDone = true
   })()
 
-  // Subscribe to partial events to collect them
-  const unsubPartial = validator.on('partial', (p) => {
-    partials.push(p as ValidatedPartial<T>)
-  })
-
-  const unsubComplete = validator.on('complete', () => {
-    completionEvents.push({ done: true })
-  })
-
-  // Wait for input to complete, then flush
-  await inputDonePromise
-
-  unsubPartial()
-  unsubComplete()
-
-  // Yield all collected partials
-  for (const p of partials) {
-    yield p
+  // Consume partials from the validator's async iterator as they are produced.
+  // The iterator resolves each item as soon as the background pump feeds
+  // enough data to complete a field, so callers see progressive updates.
+  for await (const partial of validator) {
+    yield partial
   }
 
-  void inputDone // suppress unused warning
-  void completionEvents
+  // Ensure the input pump has fully completed before the generator returns.
+  await inputDonePromise
 }
