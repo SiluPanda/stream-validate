@@ -3,6 +3,7 @@
 Progressive Zod validation for streaming LLM responses.
 
 [![npm version](https://img.shields.io/npm/v/stream-validate.svg)](https://www.npmjs.com/package/stream-validate)
+[![npm downloads](https://img.shields.io/npm/dt/stream-validate.svg)](https://www.npmjs.com/package/stream-validate)
 [![license](https://img.shields.io/npm/l/stream-validate.svg)](https://github.com/SiluPanda/stream-validate/blob/master/LICENSE)
 [![node](https://img.shields.io/node/v/stream-validate.svg)](https://www.npmjs.com/package/stream-validate)
 [![types](https://img.shields.io/npm/types/stream-validate.svg)](https://www.npmjs.com/package/stream-validate)
