@@ -10,16 +10,16 @@ Comprehensive task list derived from [SPEC.md](./SPEC.md). Every feature, config
 - [ ] **Configure peer dependency on Zod** — Add `"peerDependencies": { "zod": "^3.22.0" }` to `package.json`. Ensure Zod is also in devDependencies for development/testing. | Status: not_done
 - [ ] **Create directory structure** — Create all directories specified in the file structure: `src/parser/`, `src/validation/`, `src/adapters/`, `src/__tests__/parser/`, `src/__tests__/validation/`, `src/__tests__/adapters/`, `src/__tests__/integration/`, `src/__tests__/integration/fixtures/`. | Status: not_done
 - [ ] **Create stub files for all modules** — Create empty/placeholder files for every module listed in the file structure (Section 17): `src/index.ts`, `src/stream-validate.ts`, `src/stream-validator.ts`, `src/parser/incremental-parser.ts`, `src/parser/states.ts`, `src/parser/path-tracker.ts`, `src/validation/progressive-validator.ts`, `src/validation/schema-map.ts`, `src/validation/deep-partial.ts`, `src/adapters/openai.ts`, `src/adapters/anthropic.ts`, `src/adapters/gemini.ts`, `src/adapters/fetch.ts`, `src/adapters/sse.ts`, `src/types.ts`, `src/testing.ts`. Verify the project compiles with `npm run build`. | Status: not_done
-- [ ] **Configure ESLint** — Set up ESLint with a TypeScript-aware configuration. Ensure `npm run lint` runs cleanly on the stub files. | Status: not_done
-- [ ] **Configure Vitest** — Ensure `vitest` is configured properly (vitest.config.ts or package.json config) so `npm run test` discovers and runs test files in `src/__tests__/`. | Status: not_done
+- [x] **Configure ESLint** — Set up ESLint with a TypeScript-aware configuration. Ensure `npm run lint` runs cleanly on the stub files. | Status: done
+- [x] **Configure Vitest** — Ensure `vitest` is configured properly (vitest.config.ts or package.json config) so `npm run test` discovers and runs test files in `src/__tests__/`. | Status: done
 
 ---
 
 ## Phase 2: Type Definitions (`src/types.ts`)
 
-- [ ] **Define `DeepPartial<T>` utility type** — Implement the recursive `DeepPartial<T>` type as specified: object fields become optional recursively, arrays remain arrays (not optional arrays of optional elements) but are optional at the field level. | Status: not_done
-- [ ] **Define `ValidatedPartial<T>` interface** — Define with fields: `data: DeepPartial<T>`, `meta: FieldMeta`, `isComplete: boolean`, `seq: number`, `elapsedMs: number`. | Status: not_done
-- [ ] **Define `FieldMeta` and `FieldStatus` types** — `FieldMeta` is `Record<string, FieldStatus>`. `FieldStatus` is the union `'complete' | 'active' | 'pending' | 'error'`. | Status: not_done
+- [x] **Define `DeepPartial<T>` utility type** — Implement the recursive `DeepPartial<T>` type as specified: object fields become optional recursively, arrays remain arrays (not optional arrays of optional elements) but are optional at the field level. | Status: done
+- [x] **Define `ValidatedPartial<T>` interface** — Define with fields: `data: DeepPartial<T>`, `meta: FieldMeta`, `isComplete: boolean`, `seq: number`, `elapsedMs: number`. | Status: done
+- [x] **Define `FieldMeta` and `FieldStatus` types** — `FieldMeta` is `Record<string, FieldStatus>`. `FieldStatus` is the union `'complete' | 'active' | 'pending' | 'error'`. | Status: done
 - [ ] **Define `StreamValidatorOptions` interface** — Include all options: `onParseError`, `validationErrorStrategy`, `coerce`, `emitStrategy`, `debounceMs`, `emitPaths`, `maxDepth`, `timeoutMs`, `signal`, `onField`, `onValidationError`, `onError`. Each field must have the correct type, default annotation in JSDoc, and be optional. | Status: not_done
 - [ ] **Define `StreamValidationError` interface** — Fields: `path: string`, `value: unknown`, `zodError: z.ZodError`, `elapsedMs: number`. | Status: not_done
 - [ ] **Define `StreamParseError` interface** — Fields: `message: string`, `position: number`, `path: string`, `char?: string`, `elapsedMs: number`. | Status: not_done
@@ -46,7 +46,7 @@ Comprehensive task list derived from [SPEC.md](./SPEC.md). Every feature, config
 
 ### Incremental Parser (`src/parser/incremental-parser.ts`)
 
-- [ ] **Implement core `feed(chunk: string)` method** — Accept a string chunk, iterate over each character, and call the character-processing state machine. Maintain character position counter for error reporting. | Status: not_done
+- [x] **Implement core `feed(chunk: string)` method** — Accept a string chunk, iterate over each character, and call the character-processing state machine. Maintain character position counter for error reporting. | Status: done
 - [ ] **Implement `VALUE_START` state transitions** — Detect the start of each value type based on the first character: `{` -> push object context, `[` -> push array context, `"` -> enter `STRING`, digit/`-` -> enter `NUMBER`, `t`/`f`/`n` -> enter `LITERAL`. Skip whitespace. Emit `FieldStartEvent` when entering a value. | Status: not_done
 - [ ] **Implement string parsing (`STRING` state)** — Accumulate characters into a string buffer. Handle transition to `STRING_ESCAPE` on `\`. On unescaped closing `"`, emit `FieldCompletionEvent` with the accumulated string value and transition to the parent state. | Status: not_done
 - [ ] **Implement escape sequence handling (`STRING_ESCAPE` state)** — Handle all JSON escape sequences: `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t`. Resolve each escape to its actual character. Transition back to `STRING` state after processing. | Status: not_done
@@ -56,7 +56,7 @@ Comprehensive task list derived from [SPEC.md](./SPEC.md). Every feature, config
 - [ ] **Implement object parsing (`OBJECT_START`, `OBJECT_KEY`, `OBJECT_COLON`, `OBJECT_VALUE`, `OBJECT_COMMA`)** — `OBJECT_START`: expect `"` (key start) or `}` (empty object). `OBJECT_KEY`: delegate to string parsing for the key. `OBJECT_COLON`: expect `:`. `OBJECT_VALUE`: delegate to `VALUE_START` for the value. `OBJECT_COMMA`: expect `,` (next key-value pair) or `}` (end object). On `}`, pop context, emit object completion event. | Status: not_done
 - [ ] **Implement array parsing (`ARRAY_START`, `ARRAY_VALUE`, `ARRAY_COMMA`)** — `ARRAY_START`: expect `]` (empty array) or a value. `ARRAY_VALUE`: delegate to `VALUE_START`. `ARRAY_COMMA`: expect `,` (next element) or `]` (end array). On `]`, pop context, emit array completion event. Maintain element index counter. | Status: not_done
 - [ ] **Implement composite value completion events** — When an object `}` or array `]` is reached, emit a `FieldCompletionEvent` for the composite value containing the fully constructed object/array. Inner field completions have already been emitted individually during parsing. | Status: not_done
-- [ ] **Implement whitespace skipping** — Skip space, tab, newline, and carriage return in all states except `STRING` and `STRING_ESCAPE`, where they are accumulated as part of the string value. | Status: not_done
+- [x] **Implement whitespace skipping** — Skip space, tab, newline, and carriage return in all states except `STRING` and `STRING_ESCAPE`, where they are accumulated as part of the string value. | Status: done
 - [ ] **Implement maximum nesting depth enforcement** — Track current nesting depth. If it exceeds `maxDepth` (default 64) when pushing a new context, emit a `ParseError` with a descriptive message. | Status: not_done
 - [ ] **Implement `DONE` state** — After the root-level value completes, transition to `DONE`. Any non-whitespace characters after `DONE` emit a `ParseError`. | Status: not_done
 - [ ] **Implement end-of-stream handling** — When the stream ends (no more chunks), check the state stack. If the stack is not empty (incomplete JSON), handle gracefully: finalize any in-progress number (emit if valid), discard in-progress strings, and report truncation. | Status: not_done
@@ -81,20 +81,20 @@ Comprehensive task list derived from [SPEC.md](./SPEC.md). Every feature, config
 
 ### Deep Partial Type Utility (`src/validation/deep-partial.ts`)
 
-- [ ] **Implement `DeepPartial<T>` type export** — Export the `DeepPartial<T>` utility type for consumers. Ensure it handles objects (all keys optional), arrays (remain arrays but optional at field level), and primitives (unchanged). | Status: not_done
+- [x] **Implement `DeepPartial<T>` type export** — Export the `DeepPartial<T>` utility type for consumers. Ensure it handles objects (all keys optional), arrays (remain arrays but optional at field level), and primitives (unchanged). | Status: done
 
 ### Progressive Validator (`src/validation/progressive-validator.ts`)
 
-- [ ] **Implement per-field validation** — On receiving a `FieldCompletionEvent`, look up the Zod type from the SchemaMap, call `.safeParse(value)`. On success, add the value to the partial object at the correct path. On failure, emit a `StreamValidationError`. | Status: not_done
+- [x] **Implement per-field validation** — On receiving a `FieldCompletionEvent`, look up the Zod type from the SchemaMap, call `.safeParse(value)`. On success, add the value to the partial object at the correct path. On failure, emit a `StreamValidationError`. | Status: done
 - [ ] **Implement partial object construction with immutability** — Each new field completion produces a new partial object via shallow structural cloning. Previous partial references remain unchanged. Leaf values (primitives) are shared; object references at each nesting level are new. | Status: not_done
-- [ ] **Implement setting values at nested paths** — Support setting values at arbitrary JSON paths (e.g., `$.address.city = "Portland"`) in the partial object. Create intermediate objects as needed. For array paths, ensure the array is extended to include the new element. | Status: not_done
+- [x] **Implement setting values at nested paths** — Support setting values at arbitrary JSON paths (e.g., `$.address.city = "Portland"`) in the partial object. Create intermediate objects as needed. For array paths, ensure the array is extended to include the new element. | Status: done
 - [ ] **Implement field metadata tracking** — Maintain a `FieldMeta` map. Initialize all schema fields as `pending`. Transition fields to `active` on `FieldStartEvent`. Transition to `complete` on successful validation. Transition to `error` on failed validation. | Status: not_done
-- [ ] **Implement `isComplete` detection** — After each field completion, check if all fields in the schema have status `complete`. Set `isComplete: true` on the `ValidatedPartial` when all fields are validated. | Status: not_done
-- [ ] **Implement sequence number tracking** — Maintain a monotonically increasing counter (`seq`). Increment on each emitted `ValidatedPartial`. First emission is `seq: 1`. | Status: not_done
-- [ ] **Implement elapsed time tracking** — Record the start time when the validator is created. Compute `elapsedMs` for each `ValidatedPartial` and error event as `Date.now() - startTime` (or `performance.now()` equivalent). | Status: not_done
+- [x] **Implement `isComplete` detection** — After each field completion, check if all fields in the schema have status `complete`. Set `isComplete: true` on the `ValidatedPartial` when all fields are validated. | Status: done
+- [x] **Implement sequence number tracking** — Maintain a monotonically increasing counter (`seq`). Increment on each emitted `ValidatedPartial`. First emission is `seq: 1`. | Status: done
+- [x] **Implement elapsed time tracking** — Record the start time when the validator is created. Compute `elapsedMs` for each `ValidatedPartial` and error event as `Date.now() - startTime` (or `performance.now()` equivalent). | Status: done
 - [ ] **Implement composite value validation** — When a nested object or array completes, run the full Zod validation on the composite value (the complete object/array). This catches cross-field `.refine()` constraints. Individual leaf validations have already occurred. | Status: not_done
-- [ ] **Implement `exclude` validation error strategy (default)** — On Zod validation failure, exclude the invalid field from the partial. Continue parsing other fields. Emit `StreamValidationError`. | Status: not_done
-- [ ] **Implement `include-raw` validation error strategy** — On Zod validation failure, include the raw (unvalidated) value in the partial with a flag indicating it is unvalidated. Emit `StreamValidationError`. | Status: not_done
+- [x] **Implement `exclude` validation error strategy (default)** — On Zod validation failure, exclude the invalid field from the partial. Continue parsing other fields. Emit `StreamValidationError`. | Status: done
+- [x] **Implement `include-raw` validation error strategy** — On Zod validation failure, include the raw (unvalidated) value in the partial with a flag indicating it is unvalidated. Emit `StreamValidationError`. | Status: done
 - [ ] **Implement `abort` validation error strategy** — On Zod validation failure, stop the pipeline. Yield the current partial and end the stream. | Status: not_done
 - [ ] **Implement type coercion (`coerce` option)** — When `coerce: true`, apply automatic coercion before Zod validation: string-to-number (`Number()`), string-to-boolean, number-to-boolean (1/0), string-to-date. If coercion fails, pass the original value to Zod. | Status: not_done
 - [ ] **Handle extra unexpected keys from JSON** — Keys present in JSON but not in the Zod schema should be parsed by the parser but ignored by the validator (no error emitted, not added to partial). Match Zod's default `strip` behavior. | Status: not_done
@@ -109,15 +109,15 @@ Comprehensive task list derived from [SPEC.md](./SPEC.md). Every feature, config
 
 - [ ] **Implement `streamValidate` function signature** — Accept `AsyncIterable<string> | ReadableStream<string>`, a `ZodObject` schema, and optional `StreamValidatorOptions`. Return an `AsyncIterable<ValidatedPartial<T>>` with a `completion` promise property. | Status: not_done
 - [ ] **Implement `ReadableStream` to `AsyncIterable` adaptation** — Detect if the input is a `ReadableStream` and adapt it to an `AsyncIterable<string>` using `[Symbol.asyncIterator]()` if available, or a manual reader loop for older environments. | Status: not_done
-- [ ] **Connect Stage 1 (stream ingestion) to Stage 2 (parser)** — Iterate over the input async iterable, feeding each chunk to the incremental parser. | Status: not_done
-- [ ] **Connect Stage 2 (parser) to Stage 3 (validator)** — Route `FieldCompletionEvent` and `FieldStartEvent` from the parser to the progressive validator. | Status: not_done
-- [ ] **Implement async generator yielding `ValidatedPartial<T>`** — Yield new `ValidatedPartial` objects as the progressive validator produces them. Respect emission strategy. | Status: not_done
+- [x] **Connect Stage 1 (stream ingestion) to Stage 2 (parser)** — Iterate over the input async iterable, feeding each chunk to the incremental parser. | Status: done
+- [x] **Connect Stage 2 (parser) to Stage 3 (validator)** — Route `FieldCompletionEvent` and `FieldStartEvent` from the parser to the progressive validator. | Status: done
+- [x] **Implement async generator yielding `ValidatedPartial<T>`** — Yield new `ValidatedPartial` objects as the progressive validator produces them. Respect emission strategy. | Status: done
 - [ ] **Implement `completion` promise** — Resolve with a `StreamCompletionEvent<T>` when the stream ends. Populate all fields: `data`, `isComplete`, `truncated`, `totalMs`, `completedFields`, `totalFields`, `failedPaths`, `pendingPaths`. | Status: not_done
-- [ ] **Implement `field` emission strategy (default)** — Emit a `ValidatedPartial` after every scalar field completion, array element completion, and nested object completion. | Status: not_done
+- [x] **Implement `field` emission strategy (default)** — Emit a `ValidatedPartial` after every scalar field completion, array element completion, and nested object completion. | Status: done
 - [ ] **Implement `debounce` emission strategy** — Emit at most once per `debounceMs` milliseconds. Reset the debounce timer on each field completion. Always emit the final partial regardless of timer. | Status: not_done
 - [ ] **Implement `paths` emission strategy** — Only emit when one of the specified `emitPaths` completes. Ignore completions for other paths. | Status: not_done
-- [ ] **Implement timeout support (`timeoutMs`)** — If the stream has not completed within `timeoutMs`, abort the pipeline. Emit the current partial with `truncated: true` in the completion event. | Status: not_done
-- [ ] **Implement `AbortSignal` support (`signal`)** — Listen for the abort signal. When triggered, stop consuming the stream, emit the current partial with `truncated: true`. | Status: not_done
+- [x] **Implement timeout support (`timeoutMs`)** — If the stream has not completed within `timeoutMs`, abort the pipeline. Emit the current partial with `truncated: true` in the completion event. | Status: done
+- [x] **Implement `AbortSignal` support (`signal`)** — Listen for the abort signal. When triggered, stop consuming the stream, emit the current partial with `truncated: true`. | Status: done
 - [ ] **Implement backpressure via async iteration** — Ensure the pipeline respects backpressure: if the consumer is slow to pull partials, the pipeline pauses. No unbounded buffering. The `for await...of` protocol handles this automatically. | Status: not_done
 - [ ] **Implement callback invocations** — Call `onField(path, value)` on each field completion. Call `onValidationError(error)` on validation failures. Call `onError(error)` on parse errors. | Status: not_done
 - [ ] **Implement Stage 1 error propagation** — Network failures or stream abort errors propagate through the pipeline to the consumer as thrown exceptions in the `for await` loop. | Status: not_done
@@ -125,13 +125,13 @@ Comprehensive task list derived from [SPEC.md](./SPEC.md). Every feature, config
 
 ### `createStreamValidator` Factory (`src/stream-validator.ts`)
 
-- [ ] **Implement `createStreamValidator` factory function** — Accept a `ZodObject` schema and optional `StreamValidatorOptions`. Return a `StreamValidator<T>` instance. | Status: not_done
-- [ ] **Implement `write(chunk: string)` method** — Push a string chunk into the parser. Triggers the full parsing and validation pipeline for the characters in the chunk. | Status: not_done
-- [ ] **Implement `end()` method** — Signal stream end. Finalize parsing (handle in-progress values), run final validations, emit the completion event. | Status: not_done
-- [ ] **Implement `abort(error?: Error)` method** — Signal stream error/cancellation. Emit the current partial with `truncated: true`. | Status: not_done
-- [ ] **Implement event emitter (`on`/`off` methods)** — Support registering and removing listeners for events: `'partial'`, `'field'`, `'complete'`, `'validation-error'`, `'parse-error'`. | Status: not_done
-- [ ] **Implement `get current()` accessor** — Return the most recent `ValidatedPartial<T>`. | Status: not_done
-- [ ] **Implement `[Symbol.asyncIterator]()` method** — Allow the `StreamValidator` to be consumed as an `AsyncIterable<ValidatedPartial<T>>`. Bridge the push-based event model to the pull-based async iterator model. | Status: not_done
+- [x] **Implement `createStreamValidator` factory function** — Accept a `ZodObject` schema and optional `StreamValidatorOptions`. Return a `StreamValidator<T>` instance. | Status: done
+- [x] **Implement `write(chunk: string)` method** — Push a string chunk into the parser. Triggers the full parsing and validation pipeline for the characters in the chunk. | Status: done
+- [x] **Implement `end()` method** — Signal stream end. Finalize parsing (handle in-progress values), run final validations, emit the completion event. | Status: done
+- [x] **Implement `abort(error?: Error)` method** — Signal stream error/cancellation. Emit the current partial with `truncated: true`. | Status: done
+- [x] **Implement event emitter (`on`/`off` methods)** — Support registering and removing listeners for events: `'partial'`, `'field'`, `'complete'`, `'validation-error'`, `'parse-error'`. | Status: done
+- [x] **Implement `get current()` accessor** — Return the most recent `ValidatedPartial<T>`. | Status: done
+- [x] **Implement `[Symbol.asyncIterator]()` method** — Allow the `StreamValidator` to be consumed as an `AsyncIterable<ValidatedPartial<T>>`. Bridge the push-based event model to the pull-based async iterator model. | Status: done
 
 ---
 
@@ -170,10 +170,10 @@ Comprehensive task list derived from [SPEC.md](./SPEC.md). Every feature, config
 
 ## Phase 8: Public API Exports (`src/index.ts`)
 
-- [ ] **Export `streamValidate` function** — Re-export from `src/stream-validate.ts`. | Status: not_done
-- [ ] **Export `createStreamValidator` factory** — Re-export from `src/stream-validator.ts`. | Status: not_done
+- [x] **Export `streamValidate` function** — Re-export from `src/stream-validate.ts`. | Status: done
+- [x] **Export `createStreamValidator` factory** — Re-export from `src/stream-validator.ts`. | Status: done
 - [ ] **Export all provider adapters** — Re-export `fromOpenAI`, `fromAnthropic`, `fromGemini`, `fromFetch`, `fromSSE` from their respective adapter modules. | Status: not_done
-- [ ] **Export all public types** — Re-export `ValidatedPartial`, `FieldMeta`, `FieldStatus`, `StreamValidatorOptions`, `StreamValidationError`, `StreamParseError`, `StreamCompletionEvent`, `DeepPartial`, `StreamValidator` from `src/types.ts`. | Status: not_done
+- [x] **Export all public types** — Re-export `ValidatedPartial`, `FieldMeta`, `FieldStatus`, `StreamValidatorOptions`, `StreamValidationError`, `StreamParseError`, `StreamCompletionEvent`, `DeepPartial`, `StreamValidator` from `src/types.ts`. | Status: done
 - [ ] **Export test utilities from subpath** — Ensure `stream-validate/testing` exports `mockStream`. Configure `package.json` exports map if needed. | Status: not_done
 
 ---
